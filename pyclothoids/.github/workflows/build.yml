@@ -1,0 +1,42 @@
+name: Build Clothoids Python Wrapper
+on: [workflow_dispatch]
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive  # Scarica i submodules
+
+    - name: Install Dependencies
+      run: |
+        # Installa CMake, Eigen3, IPOPT (se necessario)
+        choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System'
+        choco install eigen --version 3.4.0
+        # choco install ipopt  # Scommenta se necessario
+
+    - name: Build pybind11
+      run: |
+        cd pyclothoids/Submodules/pybind11
+        mkdir build
+        cd build
+        cmake -DPYTHON_EXECUTABLE:FILEPATH="$env:pythonLocation\python.exe" ..
+        cmake --build . --config Release --target install
+
+    - name: Build Python Wrapper
+      run: |
+        cd pyclothoids/src_py
+        mkdir build
+        cd build
+        cmake -DPYTHON_EXECUTABLE:FILEPATH="$env:pythonLocation\python.exe" ..
+        cmake --build . --config Release --target install
+
+    - name: Collect Artifacts
+      run: |
+        mkdir artifacts
+        copy "pyclothoids\src_py\build\Release\G2lib.*.pyd" artifacts/  # Per Windows
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: clothoids-python
+        path: artifacts/
