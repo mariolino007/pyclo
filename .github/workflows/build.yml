@@ -15,8 +15,6 @@ jobs:
 
     - name: Install CMake
       uses: lukka/get-cmake@latest
-      with:
-        cmake-version: '3.29.3'  # Fix per CMake 4.0 obsoleto
 
     - name: Build pybind11
       shell: pwsh
@@ -24,10 +22,9 @@ jobs:
         cd pyclothoids/Submodules/pybind11
         mkdir build
         cd build
-        cmake `
-          -DPYBIND11_TEST=OFF `  # Disabilita i test mancanti
-          -DPYTHON_EXECUTABLE="$env:pythonLocation\python.exe" `
-          ..
+        cmake .. `
+          -DPYBIND11_TEST=OFF `
+          -DPYTHON_EXECUTABLE="$env:pythonLocation\python.exe"
         cmake --build . --config Release
 
     - name: Build Python Wrapper
@@ -36,10 +33,9 @@ jobs:
         cd pyclothoids/src_py
         mkdir build
         cd build
-        cmake `
+        cmake .. `
           -Dpybind11_DIR="../Submodules/pybind11/build" `
-          -DPYTHON_EXECUTABLE="$env:pythonLocation\python.exe" `
-          ..
+          -DPYTHON_EXECUTABLE="$env:pythonLocation\python.exe"
         cmake --build . --config Release
 
     - uses: actions/upload-artifact@v4
