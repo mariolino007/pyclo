@@ -1,4 +1,4 @@
-name: Build Clothoids Python Wrapper
+name: Build Clothoids Wrapper
 on: [workflow_dispatch]
 jobs:
   build:
@@ -6,37 +6,44 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        submodules: recursive  # Scarica i submodules
+        submodules: recursive
 
-    - name: Install Dependencies
-      run: |
-        # Installa CMake, Eigen3, IPOPT (se necessario)
-        choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System'
-        choco install eigen --version 3.4.0
-        # choco install ipopt
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install CMake
+      uses: cmake-actions/setup-cmake@v1
+      with:
+        cmake-version: '3.29.3'
 
     - name: Build pybind11
+      shell: pwsh
       run: |
         cd pyclothoids/Submodules/pybind11
         mkdir build
         cd build
-        cmake -DPYTHON_EXECUTABLE:FILEPATH="$env:pythonLocation\python.exe" ..
-        cmake --build . --config Release --target install
+        cmake `
+          -DPYTHON_EXECUTABLE="$env:pythonLocation\python.exe" `
+          -DPYTHON_INCLUDE_DIR="$env:pythonLocation\include" `
+          -DPYTHON_LIBRARY="$env:pythonLocation\libs\python311.lib" `
+          ..
+        cmake --build . --config Release
 
     - name: Build Python Wrapper
+      shell: pwsh
       run: |
         cd pyclothoids/src_py
         mkdir build
         cd build
-        cmake -DPYTHON_EXECUTABLE:FILEPATH="$env:pythonLocation\python.exe" ..
-        cmake --build . --config Release --target install
-
-    - name: Collect Artifacts
-      run: |
-        mkdir artifacts
-        copy "pyclothoids\src_py\build\Release\G2lib.*.pyd" artifacts/  # Per Windows
+        cmake `
+          -Dpybind11_DIR="../Submodules/pybind11/build" `
+          -DPYTHON_EXECUTABLE="$env:pythonLocation\python.exe" `
+          ..
+        cmake --build . --config Release
 
     - uses: actions/upload-artifact@v4
       with:
-        name: clothoids-python
-        path: artifacts/
+        name: G2lib
+        path: pyclothoids/src_py/build/Release/G2lib.*.pyd
