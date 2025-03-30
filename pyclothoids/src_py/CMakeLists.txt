@@ -1,61 +1,73 @@
-##
-# PYTHON Wrapper for Clothoids
-#
-# License MIT - See LICENSE file
-# 2019 Matteo Ragni, Claudio Kerov Ghiglianovich,
-#      Enrico Bertolazzi, Marco Frego
-#
+cmake_minimum_required(VERSION 3.14)
+project(G2lib)
 
-cmake_minimum_required(VERSION 3.10.2)
+# Configurazioni di base
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_VERBOSE_MAKEFILE ON)
 
-set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE)
-set(CMAKE_VERBOSE_MAKEFILE TRUE)
-set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
+# Trova dipendenze
+find_package(pybind11 REQUIRED)
+find_package(Eigen3 3.3 REQUIRED)
 
-project(G2lib VERSION 1.0)
+# Path sorgenti Clothoids
+set(CLOTHOIDS_SRC_DIR "${CMAKE_SOURCE_DIR}/src/Clothoids/src")
 
-find_package(pybind11 REQUIRED
-  HINTS ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/pybind11/share/cmake)
-find_package(PkgConfig)
-find_package(Eigen3 3.3 NO_MODULE)
-
-if (PkgConfig_FOUND)
-  pkg_check_modules(ipopt ipopt)
-endif()
-
-include(./CMakeLists-Flags.txt)
-add_subdirectory(.. Clothoids)
-
+# File sorgente del wrapper Python
 set(G2LIB_SOURCES
-	"src/python-Triangle2D.cc"
-	"src/python-LineSegment.cc"
-	"src/python-G2lib.cc"
-	"src/python-Clothoid.cc"
-	"src/python-CircleArc.cc"
-	"src/python-Biarc.cc"
-	"src/python-BaseCurve.cc"
-	"src/python-AABBtree.cc"
-  "src/python-ClothoidSpline-Solver.cc"
-  "src/python-ClothoidSpline-LMSolver.cc"
-  "src/python-ClothoidSpline-IpoptSolver.cc"
-  "src/python-ClothoidSpline-Interpolation.cc")
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/python-Triangle2D.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/python-LineSegment.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/python-G2lib.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/python-Clothoid.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/python-CircleArc.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/python-Biarc.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/python-BaseCurve.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/python-AABBtree.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/python-ClothoidSpline-Solver.cc"
+    "${CLOTHOIDS_SRC_DIR}/Clothoid.cc"  # File sorgente originale
+    "${CLOTHOIDS_SRC_DIR}/AABBtree.cc"  # File sorgente originale
+)
 
-pybind11_add_module(${PROJECT_NAME} MODULE ${G2LIB_SOURCES})
+# Crea modulo Python
+pybind11_add_module(${PROJECT_NAME} 
+    ${G2LIB_SOURCES}
+)
 
-target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
-target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_14)
-target_link_libraries(${PROJECT_NAME} PRIVATE ClothoidsStatic UtilsStatic QuarticStatic)
-if (ipopt_FOUND)
-  target_compile_definitions(${PROJECT_NAME} PRIVATE IPOPT_CLOTHOID_SPLINE)
-  target_include_directories(${PROJECT_NAME} PRIVATE ${ipopt_INCLUDE_DIRS})
-  target_link_libraries(${PROJECT_NAME} PRIVATE ${ipopt_LIBRARIES})
-  target_compile_definitions(${PROJECT_NAME} PRIVATE HAVE_CSTDDEF)
+# Include directories
+target_include_directories(${PROJECT_NAME} PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+    "${CLOTHOIDS_SRC_DIR}"
+    ${pybind11_INCLUDE_DIRS}
+    ${Eigen3_INCLUDE_DIRS}
+)
+
+# Opzioni di compilazione
+if(MSVC)
+    target_compile_options(${PROJECT_NAME} PRIVATE
+        /std:c++17
+        /EHsc
+        /bigobj
+        /DWIN32
+        /D_WINDOWS
+    )
+else()
+    target_compile_options(${PROJECT_NAME} PRIVATE
+        -Wall
+        -Wextra
+        -Wpedantic
+    )
 endif()
-if (TARGET Eigen3::Eigen)
-  target_compile_definitions(${PROJECT_NAME} PRIVATE LMSOLVE_CLOTHOID_SPLINE)
-  target_link_libraries(${PROJECT_NAME} PRIVATE Eigen3::Eigen)
-endif()
-target_assign_flags(${PROJECT_NAME})
 
-set(INSTALL_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/../lib/lib)
-install(TARGETS ${PROJECT_NAME} DESTINATION ${INSTALL_PREFIX})
+# Linker options
+if(IPOPT_FOUND)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE 
+        IPOPT_CLOTHOID_SPLINE
+        HAVE_CSTDDEF
+    )
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${IPOPT_LIBRARIES})
+endif()
+
+# Configurazione Eigen/LM
+target_compile_definitions(${PROJECT_NAME} PRIVATE 
+    LMSOLVE_CLOTHOID_SPLINE
+)
