@@ -18,28 +18,17 @@ jobs:
       with:
         python-version: '3.11'
 
-    - name: Build pybind11
+    - name: Configure and Build
       shell: pwsh
       run: |
-        cd pyclothoids/Submodules/pybind11
-        mkdir build
-        cd build
-        cmake .. -DPYBIND11_TEST=OFF
-        cmake --build . --config Release
-        cmake --install . --prefix install_dir
-
-    - name: Build Python Wrapper
-      shell: pwsh
-      run: |
-        cd pyclothoids/src_py
         mkdir build
         cd build
         cmake .. `
-          -Dpybind11_DIR="../Submodules/pybind11/build/install_dir/share/cmake/pybind11" `
+          -Dpybind11_DIR="Submodules/pybind11" `
           -DEigen3_DIR="C:/ProgramData/chocolatey/lib/eigen/tools/include/eigen3"
-        cmake --build . --config Release
+        cmake --build . --config Release --target G2lib
 
     - uses: actions/upload-artifact@v4
       with:
         name: G2lib
-        path: pyclothoids/src_py/build/Release/G2lib.*.pyd
+        path: build/src_py/Release/G2lib.*.pyd
