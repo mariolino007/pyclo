@@ -13,7 +13,7 @@ jobs:
         # Installa CMake, Eigen3, IPOPT (se necessario)
         choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System'
         choco install eigen --version 3.4.0
-        choco install ipopt
+        # choco install ipopt
 
     - name: Build pybind11
       run: |
