@@ -14,9 +14,7 @@ jobs:
         python-version: '3.11'
 
     - name: Install CMake
-      uses: cmake-actions/setup-cmake@v1
-      with:
-        cmake-version: '3.29.3'
+      uses: lukka/get-cmake@latest  # Azione corretta e verificata
 
     - name: Build pybind11
       shell: pwsh
@@ -27,7 +25,6 @@ jobs:
         cmake `
           -DPYTHON_EXECUTABLE="$env:pythonLocation\python.exe" `
           -DPYTHON_INCLUDE_DIR="$env:pythonLocation\include" `
-          -DPYTHON_LIBRARY="$env:pythonLocation\libs\python311.lib" `
           ..
         cmake --build . --config Release
 
