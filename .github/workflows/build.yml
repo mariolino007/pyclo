@@ -8,13 +8,15 @@ jobs:
       with:
         submodules: recursive
 
+    - name: Install Dependencies
+      run: |
+        choco install eigen -y --version 3.4.0
+        choco install cmake -y --installargs 'ADD_CMAKE_TO_PATH=System'
+
     - name: Set up Python 3.11
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
-
-    - name: Install CMake
-      uses: lukka/get-cmake@latest
 
     - name: Build pybind11
       shell: pwsh
@@ -22,10 +24,9 @@ jobs:
         cd pyclothoids/Submodules/pybind11
         mkdir build
         cd build
-        cmake .. `
-          -DPYBIND11_TEST=OFF `
-          -DPYTHON_EXECUTABLE="$env:pythonLocation\python.exe"
+        cmake .. -DPYBIND11_TEST=OFF
         cmake --build . --config Release
+        cmake --install . --prefix install_dir
 
     - name: Build Python Wrapper
       shell: pwsh
@@ -34,8 +35,8 @@ jobs:
         mkdir build
         cd build
         cmake .. `
-          -Dpybind11_DIR="../Submodules/pybind11/build" `
-          -DPYTHON_EXECUTABLE="$env:pythonLocation\python.exe"
+          -Dpybind11_DIR="../Submodules/pybind11/build/install_dir/share/cmake/pybind11" `
+          -DEigen3_DIR="C:/ProgramData/chocolatey/lib/eigen/tools/include/eigen3"
         cmake --build . --config Release
 
     - uses: actions/upload-artifact@v4
